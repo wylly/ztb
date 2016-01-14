@@ -11,7 +11,7 @@ public class DataWriter implements Runnable {
 
     private static int thrId = 0;
 
-    private Record record;
+    private LinkedList<Record> record;
     private int threadId;
 
     private boolean finished = false;
@@ -24,7 +24,7 @@ public class DataWriter implements Runnable {
         thrId = 0;
     }
 
-    public DataWriter(Record record, IRiakClient client, String bucket) {
+    public DataWriter(LinkedList<Record> record, IRiakClient client, String bucket) {
         this.record = record;
         this.client = client;
         this.bucket = bucket;
@@ -34,17 +34,35 @@ public class DataWriter implements Runnable {
     public void run() {
         try {
             Statistics statistics = StatisticsManager.getInstance().getStatistics();
-            statistics.startMeasure();
-            writeToDB(client, bucket, record.timestamp, record.data);
-            statistics.stopMeasure();
+            for (Record r : record) {
+                statistics.startMeasure();
+                writeToDB(client, bucket, r.timestamp, r.data);
+                statistics.stopMeasure();
+            }
         } catch (RiakRetryFailedException e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             this.client.shutdown();
+            releaseWaiting();
         }
     }
 
     public static void writeToDB(IRiakClient myHttpClient, String bucket, String key, String value) throws RiakRetryFailedException {
         myHttpClient.fetchBucket(bucket).execute().store(key, value).execute();
+    }
+
+    synchronized private void releaseWaiting(){
+        finished = true;
+        notifyAll();
+    }
+
+    synchronized public void waitUntilEnd(){
+        while (!finished){
+            try {
+                wait();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }

@@ -19,6 +19,17 @@ public class StatisticsManager {
     private long measureSum;
     private double meanMeasure;
     private double recordsPerSecond = 0;
+    private static long start=0;
+    private static long stop=0;
+
+
+    public static void start(){
+        start = System.currentTimeMillis();
+    }
+
+    public static void stop(){
+        stop = System.currentTimeMillis();
+    }
 
     private StatisticsManager(){
         createdStatistics = new LinkedList<Statistics>();
@@ -74,6 +85,7 @@ public class StatisticsManager {
             writer.println("Mediana czasu transmisji rekordu - " + medianMeasure);
             writer.println("Najkrotszy czas transmisji rekordu - " + minMeasure);
             writer.println("Najdluzszy czas transmisji rekordu - " + maxMeasure);
+            writer.println("Ca³y eksperyment - " + (stop-start));
             writer.close();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
